@@ -10,6 +10,8 @@ import os
 import sys
 
 bs_data_dir = os.environ.get('BRAINSTORM_DATA_DIR', 'data')
+if not os.path.exists(bs_data_dir):
+    os.makedirs(bs_data_dir)
 url = 'http://deeplearning.net/data/mnist/mnist.pkl.gz'
 mnist_file = os.path.join(bs_data_dir, 'mnist.pkl.gz')
 hdf_file = os.path.join(bs_data_dir, 'MNIST.hdf5')
