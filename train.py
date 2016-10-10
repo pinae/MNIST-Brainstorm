@@ -8,7 +8,9 @@ import h5py
 
 import brainstorm as bs
 from brainstorm.data_iterators import Minibatches
-#from brainstorm.handlers import PyCudaHandler
+from brainstorm.handlers import PyCudaHandler
+
+from time import time
 
 bs.global_rnd.set_seed(42)
 
@@ -20,8 +22,9 @@ ds = h5py.File(data_file, 'r')['normalized_split']
 x_tr, y_tr = ds['training']['default'][:], ds['training']['targets'][:]
 x_va, y_va = ds['validation']['default'][:], ds['validation']['targets'][:]
 
-getter_tr = Minibatches(100, default=x_tr, targets=y_tr)
-getter_va = Minibatches(100, default=x_va, targets=y_va)
+batch_size = 100
+getter_tr = Minibatches(batch_size, default=x_tr, targets=y_tr)
+getter_va = Minibatches(batch_size, default=x_va, targets=y_va)
 
 # ----------------------------- Set up Network ------------------------------ #
 
@@ -37,7 +40,7 @@ network = bs.Network.from_layer(
 )
 
 # Uncomment next line to use GPU
-# network.set_handler(PyCudaHandler())
+network.set_handler(PyCudaHandler())
 network.initialize(bs.initializers.Gaussian(0.01))
 network.set_weight_modifiers({"FC": bs.value_modifiers.ConstrainL2Norm(1)})
 
@@ -52,9 +55,11 @@ trainer.add_hook(bs.hooks.SaveBestNetwork('validation.Accuracy',
                                           filename='mnist_pi_best.hdf5',
                                           name='best weights',
                                           criterion='max'))
-trainer.add_hook(bs.hooks.StopAfterEpoch(500))
+trainer.add_hook(bs.hooks.StopAfterEpoch(20))
 
 # -------------------------------- Train ------------------------------------ #
 
+start_time = time()
 trainer.train(network, getter_tr, valid_getter=getter_va)
+print("The training took %.4f seconds." % (time() - start_time))
 print("Best validation accuracy:", max(trainer.logs["validation"]["Accuracy"]))
